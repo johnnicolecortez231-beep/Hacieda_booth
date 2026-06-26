@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hacienda 1898 - Photographic Studio & Retro Booth Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Special+Elite&display=swap');
+        
+        .font-vintage { font-family: 'Special Elite', Georgia, serif; }
+        .font-mono-retro { font-family: 'Courier Prime', monospace; }
+
+        /* Custom Processing Layer Overlays */
+        .vignette-heavy {
+            background: radial-gradient(circle, transparent 20%, rgba(12,10,9,0.4) 60%, rgba(4,4,3,0.98) 100%);
+        }
+        
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 4px, 6px 100%;
+        }
+
+        .noise-heavy {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.08;
+            animation: noise-jitter 0.15s steps(4) infinite;
+        }
+
+        @keyframes noise-jitter {
+            0% { background-position: 0px 0px; }
+            25% { background-position: 10px 20px; }
+            50% { background-position: -5px 10px; }
+            75% { background-position: 15px -5px; }
+            100% { background-position: 0px 0px; }
+        }
+
+        /* Custom Scrollbar styling for retro theme */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1c1917; }
+        ::-webkit-scrollbar-thumb { background: #44403c; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #78716c; }
+    </style>
+</head>
+<body class="bg-[#0c0b0a] text-stone-300 h-screen w-screen flex flex-col font-mono-retro overflow-hidden select-none">
+
+    <!-- CRITICAL APPLICATION FRAMEWORK CONTAINER -->
+    <div class="flex flex-col h-full w-full justify-between p-4 box-border">
+        
+        <!-- MODULE 1: GLOBAL MONITORING HEADER APPLICATION BAR -->
+        <header class="w-full bg-[#14120f] border border-stone-800 rounded-lg px-4 py-2.5 flex items-center justify-between shadow-md mb-3">
+            <div class="flex items-center gap-3">
+                <div class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-600"></span>
+                </div>
+                <div>
+                    <h1 class="text-xs font-bold tracking-widest text-amber-600 uppercase font-vintage">Hacienda 1898 Laboratory Systems</h1>
+                    <p class="text-[10px] text-stone-500 font-mono-retro">ADVANCED PHOTO BOOTH ARCHITECTURE & PIPELINE CONTROL v2.4.0-PRO</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6 text-[11px]">
+                <div class="hidden lg:flex items-center gap-2 border-r border-stone-800 pr-4">
+                    <span class="text-stone-600">AUDIO CORE:</span>
+                    <span id="audio-engine-status" class="text-stone-400 font-bold">READY (STANDBY)</span>
+                </div>
+                <div class="hidden sm:flex items-center gap-2 border-r border-stone-800 pr-4">
+                    <span class="text-stone-600">FPS CAP:</span>
+                    <span class="text-emerald-600 font-bold">60.00 HZ</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-stone-600">SYS_TIME:</span>
+                    <span id="live-clock" class="text-amber-700 font-bold">00:00:00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MODULE 2: WORKSPACE CONTROL AND INTERACTIVE PIPELINE CORE -->
+        <main class="flex-1 w-full flex flex-col lg:flex-row gap-4 overflow-hidden min-h-0">
+            
+            <!-- COLUMN A: LIVE INPUT HARDWARE CONTROLLER & VIEWPORT -->
+            <section class="flex-1 bg-[#14120f] border border-stone-800 rounded-xl p-4 flex flex-col justify-between overflow-y-auto min-h-0">
+                
+                <!-- ROW A.1: VIEWPORT CONSOLE HEADER -->
+                <div class="w-full flex justify-between items-center border-b border-stone-900 pb-2 mb-3">
+                    <div class="text-xs font-bold tracking-wider text-stone-400 flex items-center gap-2">
+                        <span>[VIEWPORT_01]</span>
+                        <span id="hardware-label" class="text-[10px] text-stone-600 font-normal">-- NO CAPTURE DETECTED --</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-950/40 border border-amber-900/60 text-amber-500 rounded">LIVE FEED</span>
+                        <span id="filter-badge" class="px-2 py-0.5 text-[9px] font-bold bg-stone-900 border border-stone-800 text-stone-400 rounded">DAGUERREOTYPE</span>
+                    </div>
+                </div>
+
+                <!-- ROW A.2: OPTICAL LENS VIEWPORT MATRIX SCREEN -->
+                <div class="relative w-full aspect-video bg-black border border-stone-950 rounded-lg overflow-hidden flex items-center justify-center group shadow-2xl">
+                    
+                    <!-- Hardware Video Node Stream -->
+                    <video id="hardware-stream" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0 scale-x-[-1] transition-all duration-300"></video>
+                    
+                    <!-- Dynamic Web Graphics Processing Layer Systems -->
+                    <div class="vignette-heavy absolute inset-0 z-10 pointer-events-none mix-blend-multiply"></div>
+                    <div id="fx-scanlines" class="scanlines absolute inset-0 z-10 pointer-events-none opacity-100"></div>
+                    <div id="fx-noise" class="noise-heavy absolute inset-0 z-10 pointer-events-none"></div>
+                    
+                    <!-- INTERNAL GRID GRAPHICS AND RETICLE TARGET -->
+                    <div class="absolute inset-0 z-20 pointer-events-none border border-stone-900/20 p-2">
+                        <!-- Rule of Thirds Grid Alignments -->
+                        <div class="w-full h-full relative flex flex-col justify-between">
+                            <div class="w-full flex justify-between border-b border-stone-900/10 h-1/3">
+                                <div class="border-r border-stone-900/10 w-1/3"></div>
+                                <div class="border-r border-stone-900/10 w-1/3"></div>
+                            </div>
+                            <div class="w-full flex justify-between border-b border-stone-900/10 h-1/3">
+                                <div class="border-r border-stone-900/10 w-1/3"></div>
+                                <div class="border-r border-stone-900/10 w-1/3"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Center Focus Micro Reticle -->
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-stone-500/30 font-light text-3xl">
+                            <span class="font-sans font-light">[</span>
+                            <span class="text-xs px-2 opacity-25 font-mono-retro">+</span>
+                            <span class="font-sans font-light">]</span>
+                        </div>
+                    </div>
+
+                    <!-- ON-SCREEN TELEMETRY OVERLAY DATA DISPLAY -->
+                    <div class="absolute inset-0 p-4 flex flex-col justify-between z-20 text-[10px] tracking-widest text-amber-600/70 font-bold font-mono-retro">
+                        <div class="flex justify-between items-start">
+                            <div class="bg-black/60 backdrop-blur-xs p-1.5 rounded border border-stone-900 flex flex-col gap-0.5">
+                                <div class="flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
+                                    <span>MATRIX: RECORDING</span>
+                                </div>
+                                <div id="telemetry-resolution" class="text-stone-500 text-[9px]">RAW: 640 x 480 px</div>
+                            </div>
+                            <div class="bg-black/60 backdrop-blur-xs p-1.5 rounded border border-stone-900 text-right">
+                                <div>EXP_LEVEL: +1.3 EV</div>
+                                <div id="telemetry-filter-label" class="text-stone-500 text-[9px]">MATTING: RAW EDGE</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-end">
+                            <div class="bg-black/60 backdrop-blur-xs p-1.5 rounded border border-stone-900">
+                                <div>CAMERA_DEV: NODE_AV_01</div>
+                                <div class="text-stone-500 text-[9px]">SHUTTER SPEED: 1/30s</div>
+                            </div>
+                            <div class="bg-black/60 backdrop-blur-xs p-1.5 rounded border border-stone-900 text-right">
+                                <div id="telemetry-counter">INDEX_COUNTER: 0 FILMS</div>
+                                <div class="text-amber-800 text-[9px]">STAMPED SANTA CLARA STUDIO</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- APPLICATION FLASH OVERLAY PANEL LAYER -->
+                    <div id="flash-overlay" class="absolute inset-0 bg-white opacity-0 z-40 pointer-events-none transition-opacity duration-75"></div>
+                </div>
+
+                <!-- ROW A.3: SHUTTER TRIGGERS AND SHORTCUTS INSTRUCTIONS BOARD -->
+                <div class="w-full mt-4 flex flex-col sm:flex-row gap-3">
+                    <button id="trigger-shutter-btn" onclick="executeImageCaptureSequence()" class="flex-1 py-3.5 bg-gradient-to-r from-amber-950/40 to-amber-900/30 hover:from-amber-900 hover:to-amber-800 border border-amber-800/80 hover:border-amber-600 text-amber-200 text-xs font-bold tracking-widest rounded-lg shadow-md transition-all transform active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 group">
+                        <span class="text-base group-hover:scale-125 transition-transform">📸</span>
+                        <span>PAPUTUKIN ANG SHUTTER LENS (SPACEBAR)</span>
+                    </button>
+                    
+                    <button onclick="triggerEngineAudioInterlock()" class="px-4 py-3.5 bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-400 hover:text-stone-200 text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2">
+                        <span>🔊</span>
+                        <span id="audio-btn-label">TUNE AUDIO ENGINE</span>
+                    </button>
+                </div>
+            </section>
+            
+            <!-- COLUMN B: PIPELINE PARAMETERS ADJUSTMENT PANEL -->
+            <section class="w-full lg:w-[340px] bg-[#14120f] border border-stone-800 rounded-xl p-4 flex flex-col justify-between overflow-y-auto min-h-0">
+                
+                <div class="space-y-5">
+                    <!-- SECTION TITLE B.1 -->
+                    <div class="border-b border-stone-900 pb-2">
+                        <h2 class="text-xs font-bold text-stone-400 tracking-widest uppercase font-vintage">Processing Parameters</h2>
+                        <p class="text-[9px] text-stone-600">Live hardware signal modification multipliers</p>
+                    </div>
+
+                    <!-- SLIDER CONTROLLER PARAMETERS PIPELINE MODULE -->
+                    <div class="space-y-4">
+                        <!-- Parameter 1: Vintage Filter Selection Matrix -->
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] text-stone-500 font-bold tracking-wider block">DEVELOPING FORMULA (PRESET)</label>
+                            <select id="control-filter-formula" onchange="synchronizeProcessorSettings()" class="w-full bg-[#0c0b0a] border border-stone-800 rounded px-2.5 py-1.5 text-xs text-amber-600 font-mono-retro focus:outline-hidden focus:border-amber-700">
+                                <option value="daguerreotype">DAGUERREOTYPE (1898 SEPIA)</option>
+                                <option value="noir">1920S NOIR (HIGH CONTRAST MONO)</option>
+                                <option value="cyanotype">CYANOTYPE (PRUSSIAN BLUE PRINT)</option>
+                                <option value="faded-archive">FADED ARCHIVE (CHROME WASH)</option>
+                                <option value="raw-bypass">RAW MONITOR BYPASS (NO EFFECTS)</option>
+                            </select>
+                        </div>
+
+                        <!-- Parameter 2: Brightness Control Slider Matrix -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-mono-retro">
+                                <span class="text-stone-500">EXPOSURE GAIN (BRIGHTNESS)</span>
+                                <span id="val-brightness" class="text-amber-600 font-bold">100%</span>
+                            </div>
+                            <input type="range" id="slider-brightness" min="50" max="150" value="95" oninput="synchronizeProcessorSettings()" class="w-full accent-amber-700 bg-stone-900 h-1 rounded">
+                        </div>
+
+                        <!-- Parameter 3: Contrast Processing Slider Matrix -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-mono-retro">
+                                <span class="text-stone-500">SILVER DENSITY (CONTRAST)</span>
+                                <span id="val-contrast" class="text-amber-600 font-bold">120%</span>
+                            </div>
+                            <input type="range" id="slider-contrast" min="70" max="200" value="125" oninput="synchronizeProcessorSettings()" class="w-full accent-amber-700 bg-stone-900 h-1 rounded">
+                        </div>
+
+                        <!-- Parameter 4: Saturation Control Matrix -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-mono-retro">
+                                <span class="text-stone-500">CHROMATIC SATURATION</span>
+                                <span id="val-saturation" class="text-amber-600 font-bold">85%</span>
+                            </div>
+                            <input type="range" id="slider-saturation" min="0" max="150" value="80" oninput="synchronizeProcessorSettings()" class="w-full accent-amber-700 bg-stone-900 h-1 rounded">
+                        </div>
+
+                        <!-- Parameter 5: Grain Dispersion Density Matrix -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-mono-retro">
+                                <span class="text-stone-500">GRAIN JITTER ARTIFACTS</span>
+                                <span id="val-grain" class="text-amber-600 font-bold">HIGH (8%)</span>
+                            </div>
+                            <input type="range" id="slider-grain" min="0" max="20" value="8" oninput="synchronizeProcessorSettings()" class="w-full accent-amber-700 bg-stone-900 h-1 rounded">
+                        </div>
+
+                        <!-- Parameter 6: Scanlines Filter Overlay Opacity Matrix -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-mono-retro">
+                                <span class="text-stone-500">VHS SCANLINE INTERFERENCE</span>
+                                <span id="val-scanlines" class="text-amber-600 font-bold">ON (40%)</span>
+                            </div>
+                            <input type="range" id="slider-scanlines" min="0" max="100" value="40" oninput="synchronizeProcessorSettings()" class="w-full accent-amber-700 bg-stone-900 h-1 rounded">
+                        </div>
+                    </div>
+
+                    <!-- B.2 WATERMARK & STUDIO BRANDING PARAMS STAMP EDITOR -->
+                    <div class="border-t border-stone-900 pt-3 space-y-3">
+                        <label class="text-[10px] text-stone-500 font-bold tracking-wider block">METADATA LABELS & METRIC STAMP</label>
+                        
+                        <div class="space-y-2">
+                            <input type="text" id="input-stamp-main" value="HACIENDA 1898" placeholder="Primary Stamp Label" oninput="synchronizeProcessorSettings()" class="w-full bg-[#0c0b0a] border border-stone-800 rounded px-2.5 py-1 text-xs text-stone-300 font-mono-retro focus:outline-hidden focus:border-amber-800">
+                            <input type="text" id="input-stamp-sub" value="SANTA CLARA STUDIO" placeholder="Secondary Subtext Label" oninput="synchronizeProcessorSettings()" class="w-full bg-[#0c0b0a] border border-stone-800 rounded px-2.5 py-1 text-xs text-stone-400 font-mono-retro focus:outline-hidden focus:border-amber-800">
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="checkbox-timestamp" checked onchange="synchronizeProcessorSettings()" class="accent-amber-700 bg-stone-900 rounded">
+                            <span class="text-[10px] text-stone-500">Isama ang petsang pangkasaysayan sa canvas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- B.3 CACHE CLEANER CONTROLLER SYSTEMS -->
+                <div class="border-t border-stone-900 pt-4 mt-4">
+                    <button onclick="flushApplicationCache()" class="w-full py-2 bg-stone-950 hover:bg-red-950/20 border border-stone-900 hover:border-red-900/50 text-stone-500 hover:text-red-400 text-[10px] font-bold rounded transition-colors cursor-pointer tracking-widest uppercase">
+                        🧼 FLUSH GALLERY DATA MEMORY STORAGE
+                    </button>
+                </div>
+            </section>
+
+            <!-- COLUMN C: ARCHIVAL GALLERY STRIP AND FILE OUTPUT GENERATOR -->
+            <section class="w-full lg:w-[260px] bg-[#14120f] border border-stone-800 rounded-xl p-4 flex flex-col justify-between overflow-hidden min-h-0">
+                
+                <div class="w-full h-full flex flex-col overflow-hidden">
+                    <!-- SECTION TITLE C.1 -->
+                    <div class="border-b border-stone-900 pb-2 mb-3 shrink-0">
+                        <h2 class="text-xs font-bold text-stone-400 tracking-widest uppercase font-vintage">Archival Film Strip</h2>
+                        <p id="gallery-counter-label" class="text-[9px] text-stone-600">0 of 0 negative plates processed</p>
+                    </div>
+
+                    <!-- SCROLLABLE GALLERY STACKS INJECTOR -->
+                    <div id="archival-gallery" class="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto flex-1 p-1 min-h-0 items-start">
+                        <!-- Default state view structure when no item holds cache entries -->
+                        <div id="gallery-placeholder" class="text-center py-12 px-4 border border-dashed border-stone-900 rounded-lg w-full flex flex-col items-center justify-center gap-2">
+                            <span class="text-2xl opacity-20">🎞️</span>
+                            <span class="text-[10px] text-stone-600 font-sans italic">Blangko ang imbakan ng mga negatibong plato. Kumuha ng litrato gamit ang kamera.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CORE CALCULATION ENGINE CANVAS BAR (HIDDEN IN SECURE ENVIRONMENT) -->
+                <canvas id="processing-pipeline-canvas" width="640" height="480" class="hidden"></canvas>
+            </section>
+        </main>
+
+        <!-- MODULE 3: SYSTEM HARDWARE AND SOFTWARE LEGAL FOOTER METRICS -->
+        <footer class="w-full bg-[#0c0b0a] border-t border-stone-900 text-[10px] text-stone-600 pt-2.5 flex flex-col sm:flex-row justify-between items-center gap-2 font-mono-retro tracking-wider">
+            <div>DESCRIPTIVE FRAMEWORK: INTERACTIVE CAMERA APPLICATION EXPERIMENT FIELD TESTING UNIT</div>
+            <div class="flex gap-4">
+                <a href="#" class="hover:text-amber-700 transition-colors">LICENSING SYSTEM API</a>
+                <span>•</span>
+                <a href="#" class="hover:text-amber-700 transition-colors">VANILLA CORE REFACTOR</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- MAIN INTERACTIVE ARCHITECTURE ENGINE OBJECT ENVIRONMENT -->
+    <script>
+        // CORE GLOBAL APP VARIABLES
+        const hardwareStreamNode = document.getElementById('hardware-stream');
+        const processingCanvasNode = document.getElementById('processing-pipeline-canvas');
+        const canvasRenderingContext = processingCanvasNode.getContext('2d');
+        const flashOverlayElement = document.getElementById('flash-overlay');
+        const archivalGalleryContainer = document.getElementById('archival-gallery');
+        const galleryPlaceholderElement = document.getElementById('gallery-placeholder');
+        
+        // SLIDER AND DOM DATA NODES
+        const controlFilterFormula = document.getElementById('control-filter-formula');
+        const sliderBrightness = document.getElementById('slider-brightness');
+        const sliderContrast = document.getElementById('slider-contrast');
+        const sliderSaturation = document.getElementById('slider-saturation');
+        const sliderGrain = document.getElementById('slider-grain');
+        const sliderScanlines = document.getElementById('slider-scanlines');
+        
+        const inputStampMain = document.getElementById('input-stamp-main');
+        const inputStampSub = document.getElementById('input-stamp-sub');
+        const checkboxTimestamp = document.getElementById('checkbox-timestamp');
+
+        // VALUE STRINGS OUTPUT TEXT READOUT
+        const txtBrightness = document.getElementById('val-brightness');
+        const txtContrast = document.getElementById('val-contrast');
+        const txtSaturation = document.getElementById('val-saturation');
+        const txtGrain = document.getElementById('val-grain');
+        const txtScanlines = document.getElementById('val-scanlines');
+        
+        // TELEMETRY METRICS LABELS
+        const lblLiveClock = document.getElementById('live-clock');
+        const lblHardwareLabel = document.getElementById('hardware-label');
+        const lblTelemetryFilter = document.getElementById('telemetry-filter-label');
+        const lblTelemetryCounter = document.getElementById('telemetry-counter');
+        const lblGalleryCounter = document.getElementById('gallery-counter-label');
+        const lblFilterBadge = document.getElementById('filter-badge');
+
+        // LAYERS FX TARGETS
+        const layerScanlines = document.getElementById('fx-scanlines');
+        const layerNoise = document.getElementById('fx-noise');
+
+        // CACHE ARRAY LIST RECORD STORAGE
+        let totalCapturedPlatesCount = 0;
+        let internalDatabaseStorageCache = [];
+
+        // WEB AUDIO SYSTEM SYNTH CORE OBJECTS
+        let audioHardwareContext = null;
+        let internalAudioEngineLocked = true;
+
+        /**
+         * INITIALIZATION RUNTIME ENGINE INTERLOCK
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeSystemClockRuntime();
+            establishHardwareVideoCaptureChannel();
+            synchronizeProcessorSettings();
+            restoreDatabaseCachedFiles();
+            configureGlobalKeyboardListeners();
+        });
+
+        /**
+         * SYSTEM TICK CLOCK ENGINE FUNCTION
+         */
+        function initializeSystemClockRuntime() {
+            setInterval(() => {
+                const currentDate = new Date();
+                let hours = String(currentDate.getHours()).padStart(2, '0');
+                let minutes = String(currentDate.getMinutes()).padStart(2, '0');
+                let seconds = String(currentDate.getSeconds()).padStart(2, '0');
+                lblLiveClock.innerText = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        /**
+         * MEDIA MEDIA HARDWARE STREAM INTERFACE ENGINE MANAGEMENT
+         */
+        function establishHardwareVideoCaptureChannel() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const constraintConfiguration = {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: "user"
+                    },
+                    audio: false
+                };
+
+                navigator.mediaDevices.getUserMedia(constraintConfiguration)
+                    .then(mediaStreamPayload => {
+                        hardwareStreamNode.srcObject = mediaStreamPayload;
+                        lblHardwareLabel.innerText = "ACTIVE USER_WEBCAM INTEGRATION";
+                        
+                        // Parse tracking configurations resolution details
+                        const trackSettings = mediaStreamPayload.getVideoTracks()[0].getSettings();
+                        if(trackSettings && trackSettings.width) {
+                            document.getElementById('telemetry-resolution').innerText = `RAW: ${trackSettings.width} x ${trackSettings.height} px`;
+                        }
+                    })
+                    .catch(hardwareInterlockFault => {
+                        console.error("Camera interface initialization rejected: ", hardwareInterlockFault);
+                        lblHardwareLabel.innerText = "FALLBACK DISCONNECTED HARDWARE VIRTUALIZED";
+                        lblHardwareLabel.classList.add('text-red-800');
+                    });
+            } else {
+                lblHardwareLabel.innerText = "MEDIA INTERFACE ENGINE FAULT UNAVAILABLE";
+            }
+        }
+
+        /**
+         * SYNCHRONIZE AND REALTIME MAP ENGINE PARAMETERS
+         */
+        function synchronizeProcessorSettings() {
+            // Read target values directly from data input sliders controls
+            const brightness = sliderBrightness.value;
+            const contrast = sliderContrast.value;
+            const saturation = sliderSaturation.value;
+            const grainValue = sliderGrain.value;
+            const scanlineOpacity = sliderScanlines.value;
+            const selectedFormula = controlFilterFormula.value;
+
+            // Output numeric feedback metrics to dynamic interface panels readouts
+            txtBrightness.innerText = `${brightness}%`;
+            txtContrast.innerText = `${contrast}%`;
+            txtSaturation.innerText = `${saturation}%`;
+            txtGrain.innerText = grainValue == 0 ? "DISABLED" : `DENSITY (${grainValue}%)`;
+            txtScanlines.innerText = scanlineOpacity == 0 ? "OFF" : `OPACITY (${scanlineOpacity}%);`;
+
+            // Adjust live preview visual effects element matrices dynamically via CSS style injection
+            layerScanlines.style.opacity = (scanlineOpacity / 100);
+            layerNoise.style.opacity = (grainValue / 100);
+
+            // Construct Filter String arrays based on selected mathematical preset matrices Formulas
+            let cssFilterConstructValue = "";
+            lblFilterBadge.innerText = selectedFormula.toUpperCase().replace("-", " ");
+
+            switch(selectedFormula) {
+                case 'daguerreotype':
+                    cssFilterConstructValue = `sepia(0.85) brightness(${brightness / 100}) contrast(${contrast / 100}) saturate(${saturation / 100}) hue-rotate(-10deg)`;
+                    lblTelemetryFilter.innerText = "FORMULA: SILVR_SEPIA_1898";
+                    break;
+                case 'noir':
+                    cssFilterConstructValue = `grayscale(1) brightness(${brightness / 100}) contrast(${(contrast / 100) * 1.4}) saturate(0)`;
+                    lblTelemetryFilter.innerText = "FORMULA: HIGH_CONTRAST_MONO_1920";
+                    break;
+                case 'cyanotype':
+                    cssFilterConstructValue = `sepia(0.6) hue-rotate(190deg) saturate(${(saturation / 100) * 1.5}) brightness(${brightness / 100}) contrast(${contrast / 100})`;
+                    lblTelemetryFilter.innerText = "FORMULA: PRUSSIAN_BLUE_PRINT_1842";
+                    break;
+                case 'faded-archive':
+                    cssFilterConstructValue = `contrast(${(contrast / 100) * 0.8}) saturate(${(saturation / 100) * 0.4}) brightness(${(brightness / 100) * 1.1}) sepia(0.2)`;
+                    lblTelemetryFilter.innerText = "FORMULA: CHROMATIC_FADED_ARCHIVE";
+                    break;
+                case 'raw-bypass':
+                    cssFilterConstructValue = "none";
+                    lblTelemetryFilter.innerText = "FORMULA: PHYSICAL_RAW_BYPASS";
+                    break;
+            }
+
+            hardwareStreamNode.style.filter = cssFilterConstructValue;
+        }
+
+        /**
+         * SHORTCUT LISTENER SYSTEM MAPPINGS INTERLOCK
+         */
+        function configureGlobalKeyboardListeners() {
+            window.addEventListener('keydown', keyboardEventPayload => {
+                if (keyboardEventPayload.code === 'Space') {
+                    // Check if focused inside an interactive field input to ignore triggering shutter
+                    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') {
+                        return;
+                    }
+                    keyboardEventPayload.preventDefault();
+                    executeImageCaptureSequence();
+                }
+            });
+        }
+
+        /**
+         * NATIVE AUDIO OSCILLATOR SYNTH CORE HARDWARE DRIVER ENGINE
+         * Generates programmatic vintage camera shutter mechanism clicks and frequencies dynamically
+         */
+        function triggerEngineAudioInterlock() {
+            try {
+                if (!audioHardwareContext) {
+                    audioHardwareContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                if (audioHardwareContext.state === 'suspended') {
+                    audioHardwareContext.resume();
+                }
+
+                internalAudioEngineLocked = false;
+                document.getElementById('audio-engine-status').innerText = "ONLINE (SYNTH ACTIVE)";
+                document.getElementById('audio-engine-status').classList.add('text-emerald-500');
+                document.getElementById('audio-btn-label').innerText = "AUDIO ENGINE DISCIPLINED";
+                
+                // Fire verification signal beep pulse array
+                playNativeSynthesizedAudioBeep(440, 0.08, 'sine');
+            } catch (audioSystemFault) {
+                console.error("Audio API Core initialization pipeline rejected: ", audioSystemFault);
+            }
+        }
+
+        function playNativeSynthesizedAudioBeep(frequencyValue, durationSeconds, waveTypePattern = 'sine') {
+            if (!audioHardwareContext || internalAudioEngineLocked) return;
+
+            const targetOscillator = audioHardwareContext.createOscillator();
+            const volumeGainController = audioHardwareContext.createGain();
+
+            targetOscillator.type = waveTypePattern;
+            targetOscillator.frequency.value = frequencyValue;
+
+            volumeGainController.gain.setValueAtTime(0.15, audioHardwareContext.currentTime);
+            volumeGainController.gain.exponentialRampToValueAtTime(0.001, audioHardwareContext.currentTime + durationSeconds);
+
+            targetOscillator.connect(volumeGainController);
+            volumeGainController.connect(audioHardwareContext.destination);
+
+            targetOscillator.start();
+            targetOscillator.stop(audioHardwareContext.currentTime + durationSeconds);
+        }
+
+        function playSynthesizedShutterMechanicalSoundSequence() {
+            if (!audioHardwareContext || internalAudioEngineLocked) return;
+
+            const productionTime = audioHardwareContext.currentTime;
+            
+            // Channel Component A: High Frequency Metallic Shutter Blade Click Noise Snap
+            const shutterOscillator = audioHardwareContext.createOscillator();
+            const shutterGainNode = audioHardwareContext.createGain();
+            shutterOscillator.type = 'triangle';
+            shutterOscillator.frequency.setValueAtTime(850, productionTime);
+            shutterOscillator.frequency.exponentialRampToValueAtTime(150, productionTime + 0.06);
+            shutterGainNode.gain.setValueAtTime(0.35, productionTime);
+            shutterGainNode.gain.linearRampToValueAtTime(0.001, productionTime + 0.06);
+            shutterOscillator.connect(shutterGainNode);
+            shutterGainNode.connect(audioHardwareContext.destination);
+            shutterOscillator.start(productionTime);
+            shutterOscillator.stop(productionTime + 0.06);
+
+            // Channel Component B: Low Frequency Mechanical Mirror Box Rebound Resonant Thump
+            const mirrorOscillator = audioHardwareContext.createOscillator();
+            const mirrorGainNode = audioHardwareContext.createGain();
+            mirrorOscillator.type = 'sine';
+            mirrorOscillator.frequency.setValueAtTime(95, productionTime + 0.02);
+            mirrorOscillator.frequency.linearRampToValueAtTime(40, productionTime + 0.12);
+            mirrorGainNode.gain.setValueAtTime(0.45, productionTime + 0.02);
+            mirrorGainNode.gain.exponentialRampToValueAtTime(0.001, productionTime + 0.14);
+            mirrorOscillator.connect(mirrorGainNode);
+            mirrorGainNode.connect(audioHardwareContext.destination);
+            mirrorOscillator.start(productionTime + 0.02);
+            mirrorOscillator.stop(productionTime + 0.14);
+        }
+
+        /**
+         * CORE PROCESSING IMAGE DATA PIXELS PIPELINE DEPLOYMENT MATRIX ENGINE
+         */
+        function executeImageCaptureSequence() {
+            // Trigger Audio Engine Initialization safeguard hook if locked state persists
+            if(internalAudioEngineLocked) {
+                triggerEngineAudioInterlock();
+            }
+
+            // Run sound wave synthetics array clicks
+            playSynthesizedShutterMechanicalSoundSequence();
+
+            // Flash Animation Layer Instantiation
+            flashOverlayElement.style.opacity = '1';
+            setTimeout(() => { flashOverlayElement.style.opacity = '0'; }, 110);
+
+            // Halt and verify processing context viability variables
+            if (!canvasRenderingContext) return;
+
+            // Clear framework tracking blocks boundaries canvas metrics
+            canvasRenderingContext.clearRect(0, 0, processingCanvasNode.width, processingCanvasNode.height);
+
+            // Mirror video frame image buffer horizontally on processing canvas to lock correct orientation
+            canvasRenderingContext.save();
+            canvasRenderingContext.translate(processingCanvasNode.width, 0);
+            canvasRenderingContext.scale(-1, 1);
+            
+            try {
+                canvasRenderingContext.drawImage(hardwareStreamNode, 0, 0, processingCanvasNode.width, processingCanvasNode.height);
+            } catch (canvasDrawError) {
+                // If stream is empty, generate generic dynamic geometric mock target framework frame as backup
+                canvasRenderingContext.fillStyle = "#1c1917";
+                canvasRenderingContext.fillRect(0,0, processingCanvasNode.width, processingCanvasNode.height);
+                canvasRenderingContext.strokeStyle = "#44403c";
+                canvasRenderingContext.lineWidth = 4;
+                canvasRenderingContext.strokeRect(20,20, processingCanvasNode.width-40, processingCanvasNode.height-40);
+            }
+            canvasRenderingContext.restore();
+
+            // EXTRACT BITMAP IMAGE PIXEL DATA BUFFERS BLOCK ARRAYS
+            let targetImageBitmapData = canvasRenderingContext.getImageData(0, 0, processingCanvasNode.width, processingCanvasNode.height);
+            let pixelDataBufferChannel = targetImageBitmapData.data;
+            const lengthBuffer = pixelDataBufferChannel.length;
+
+            // Read hardware tuning configuration modifiers data sliders structures
+            const userBrightnessMod = parseFloat(sliderBrightness.value) / 100;
+            const userContrastMod = parseFloat(sliderContrast.value) / 100;
+            const userSaturationMod = parseFloat(sliderSaturation.value) / 100;
+            const selectedFormulaCode = controlFilterFormula.value;
+            const randomGrainIntensity = parseFloat(sliderGrain.value);
+
+            // COMPUTE DESTRUCTIVE EMBEDDED FILTER TRANSFORMATIONS VIA RAW ARRAYS MULTIPLIERS LOOP
+            for (let pointerOffset = 0; pointerOffset < lengthBuffer; pointerOffset += 4) {
+                let pixelRed = pixelDataBufferChannel[pointerOffset];
+                let pixelGreen = pixelDataBufferChannel[pointerOffset + 1];
+                let pixelBlue = pixelDataBufferChannel[pointerOffset + 2];
+
+                // Step A: Apply Custom Multiplier Formula Matrix Arrays
+                if (selectedFormulaCode === 'daguerreotype') {
+                    let transRed   = (pixelRed * 0.393) + (pixelGreen * 0.769) + (pixelBlue * 0.189);
+                    let transGreen = (pixelRed * 0.349) + (pixelGreen * 0.686) + (pixelBlue * 0.168);
+                    let transBlue  = (pixelRed * 0.272) + (pixelGreen * 0.534) + (pixelBlue * 0.131);
+                    pixelRed = transRed; pixelGreen = transGreen; pixelBlue = transBlue;
+                } 
+                else if (selectedFormulaCode === 'noir') {
+                    let luminanceGrayValue = (pixelRed * 0.299) + (pixelGreen * 0.587) + (pixelBlue * 0.114);
+                    pixelRed = luminanceGrayValue; pixelGreen = luminanceGrayValue; pixelBlue = luminanceGrayValue;
+                }
+                else if (selectedFormulaCode === 'cyanotype') {
+                    let processGray = (pixelRed * 0.2126) + (pixelGreen * 0.7152) + (pixelBlue * 0.0722);
+                    pixelRed = processGray * 0.22;
+                    pixelGreen = processGray * 0.44;
+                    pixelBlue = processGray * 0.78;
+                }
+                else if (selectedFormulaCode === 'faded-archive') {
+                    pixelRed   = (pixelRed * 0.85) + 30;
+                    pixelGreen = (pixelGreen * 0.80) + 25;
+                    pixelBlue  = (pixelBlue * 0.70) + 15;
+                }
+
+                // Step B: Calculate Custom Brightness Scaling Factor Modifications
+                pixelRed   *= userBrightnessMod;
+                pixelGreen *= userBrightnessMod;
+                pixelBlue  *= userBrightnessMod;
+
+                // Step C: Apply Destructive Contrast Adjustments Multipliers
+                pixelRed   = (((pixelRed / 255) - 0.5) * userContrastMod + 0.5) * 255;
+                pixelGreen = (((pixelGreen / 255) - 0.5) * userContrastMod + 0.5) * 255;
+                pixelBlue  = (((pixelBlue / 255) - 0.5) * userContrastMod + 0.5) * 255;
+
+                // Step D: Apply Jitter Artifacts Noise Generation Matrices Randomization Array
+                if (randomGrainIntensity > 0) {
+                    let dynamicNoiseScalar = (Math.random() - 0.5) * (randomGrainIntensity * 3.5);
+                    pixelRed   += dynamicNoiseScalar;
+                    pixelGreen += dynamicNoiseScalar;
+                    pixelBlue  += dynamicNoiseScalar;
+                }
+
+                // Boundary Guard Constraints Validation Check clamping 0-255 channels threshold
+                pixelDataBufferChannel[pointerOffset]     = Math.min(255, Math.max(0, pixelRed));
+                pixelDataBufferChannel[pointerOffset + 1] = Math.min(255, Math.max(0, pixelGreen));
+                pixelDataBufferChannel[pointerOffset + 2] = Math.min(255, Math.max(0, pixelBlue));
+            }
+
+            // Put modified pixel buffers block array back onto canvas rendering engine
+            canvasRenderingContext.putImageData(targetImageBitmapData, 0, 0);
+
+            // EMBED COMPRESSED VINYL CARDSTOCK MATTING & WATERMARK TEXT LABELS ON CANVAS STAMP
+            injectGraphicBrandingWatermarksOntoCanvasFrame();
+
+            // EXTRACT EMBEDDED CONVERTED BASE64 DATA URL FROM HARDWARE PIPELINE
+            const processedBase64DataURL = processingCanvasNode.toDataURL('image/jpeg', 0.90);
+
+            // Increment storage tracker statistics indices
+            totalCapturedPlatesCount++;
+            
+            const plateMetadataPayload = {
+                id: `HACIENDA_PLATE_${Date.now()}`,
+                index: totalCapturedPlatesCount,
+                dataUrl: processedBase64DataURL,
+                timestamp: generateHistoricalFormattedTimestampString()
+            };
+
+            // Sync structural arrays push sequences
+            internalDatabaseStorageCache.unshift(plateMetadataPayload);
+            commitDatabaseEntriesToLocalStorageMemory();
+
+            // Redraw and re-render modified elements to target document elements
+            injectImageNodeToApplicationGalleryStrip(plateMetadataPayload, true);
+            updateUIAnalyticsCountersDisplay();
+        }
+
+        /**
+         * BRANDING GRAPHICS LAYER DESIGN DRAW INJECTOR
+         */
+        function injectGraphicBrandingWatermarksOntoCanvasFrame() {
+            const stampMainTextValue = inputStampMain.value.toUpperCase();
+            const stampSubTextValue = inputStampSub.value.toUpperCase();
+
+            // Draw solid linear gradient dark bottom cardstock matting banner block bar
+            canvasRenderingContext.fillStyle = "rgba(10, 8, 7, 0.45)";
+            canvasRenderingContext.fillRect(0, processingCanvasNode.height - 75, processingCanvasNode.width, 75);
+
+            // Primary Stamp Branding Core Rendering configurations
+            canvasRenderingContext.font = "bold 20px 'Courier New', monospace";
+            canvasRenderingContext.fillStyle = "rgba(194, 120, 3, 0.75)"; // Historic vintage oxidized iron amber glow
+            canvasRenderingContext.fillText(stampMainTextValue, 35, processingCanvasNode.height - 42);
+
+            // Secondary Subtext Branding configurations
+            canvasRenderingContext.font = "12px 'Courier New', monospace";
+            canvasRenderingContext.fillStyle = "rgba(139, 92, 26, 0.65)";
+            canvasRenderingContext.fillText(stampSubTextValue, 35, processingCanvasNode.height - 22);
+
+            // Evaluate if historical layout metadata string inclusion remains checked active
+            if(checkboxTimestamp.checked) {
+                const historicalTimeString = generateHistoricalFormattedTimestampString();
+                canvasRenderingContext.font = "italic tracking-widest 10px 'Courier New', monospace";
+                canvasRenderingContext.fillStyle = "rgba(120, 113, 108, 0.55)";
+                canvasRenderingContext.textAlign = "right";
+                canvasRenderingContext.fillText(historicalTimeString, processingCanvasNode.width - 35, processingCanvasNode.height - 22);
+                canvasRenderingContext.textAlign = "left"; // Reset context behavior anchor point defaults
+            }
+        }
+
+        /**
+         * HISTORICAL DATE METRIC FORMAT STRING COMPILER PIPELINE
+         */
+        function generateHistoricalFormattedTimestampString() {
+            const currentSystemDateObject = new Date();
+            let systemCurrentHoursString = String(currentSystemDateObject.getHours()).padStart(2, '0');
+            let systemCurrentMinutesString = String(currentSystemDateObject.getMinutes()).padStart(2, '0');
+            return `APRIL 21, 1898 - EXP_EXPANSION_LOC [${systemCurrentHoursString}:${systemCurrentMinutesString}_FRAME_LOCK]`;
+        }
+
+        /**
+         * RUNTIME GALLERY COMPONENT TEMPLATE COMPILER INJECTOR BUILDER
+         */
+        function injectImageNodeToApplicationGalleryStrip(plateObjectDataPayload, prependInsertModeFlag = false) {
+            // Remove visibility status of fallback instruction layout placeholder panel if present
+            if (galleryPlaceholderElement && galleryPlaceholderElement.parentNode) {
+                galleryPlaceholderElement.remove();
+            }
+
+            // Construct DOM HTML element nodes anchor matrices links wrappers programmatically
+            const frameAnchorCardNode = document.createElement('a');
+            frameAnchorCardNode.href = plateObjectDataPayload.dataUrl;
+            frameAnchorCardNode.download = `Hacienda_1898_Negative_Plate_${plateObjectDataPayload.index}.jpg`;
+            frameAnchorCardNode.id = plateObjectDataPayload.id;
+            
+            // Build scalable CSS class structural frameworks layout mapping structures via Tailwind injection engine
+            frameAnchorCardNode.className = "block relative border border-stone-800 hover:border-amber-700 bg-stone-950 p-2 rounded-lg transition-all transform hover:scale-[1.02] shrink-0 cursor-pointer group shadow-lg w-36 lg:w-full";
+            
+            frameAnchorCardNode.innerHTML = `
+                <div class="relative overflow-hidden rounded bg-black aspect-video border border-stone-900">
+                    <img src="${plateObjectDataPayload.dataUrl}" class="w-full h-full object-cover filter brightness-90 group-hover:brightness-100 transition-all">
+                    <div class="absolute bottom-1 left-1 bg-black/80 border border-stone-900 text-[8px] text-stone-500 px-1 py-0.5 rounded font-mono-retro">
+                        PLATE_${String(plateObjectDataPayload.index).padStart(3, '0')}
+                    </div>
+                </div>
+                <div class="mt-2 flex flex-col justify-between items-start text-[9px] font-mono-retro">
+                    <div class="text-stone-400 font-bold truncate w-full tracking-wider uppercase font-vintage">NEGATIVE_MATTE_PLATE</div>
+                    <div class="text-stone-600 text-[8px] truncate w-full mt-0.5">${plateObjectDataPayload.timestamp}</div>
+                </div>
+                <div class="absolute inset-0 bg-stone-950/90 opacity-0 group-hover:opacity-100 flex flex-col gap-1 items-center justify-center rounded-lg transition-opacity duration-200 z-30">
+                    <span class="text-lg">💾</span>
+                    <span class="text-[9px] text-amber-500 font-bold tracking-widest uppercase">DOWNLOAD JPEG</span>
+                </div>
+            `;
+
+            // Append compiled dynamic structural object cards node segments to DOM tree interfaces target elements
+            if (prependInsertModeFlag) {
+                archivalGalleryContainer.insertBefore(frameAnchorCardNode, archivalGalleryContainer.firstChild);
+            } else {
+                archivalGalleryContainer.appendChild(frameAnchorCardNode);
+            }
+        }
+
+        /**
+         * INTERFACE TELEMETRY AND ANALYTICS METRICS SYNCHRONIZER
+         */
+        function updateUIAnalyticsCountersDisplay() {
+            const collectionCountLength = internalDatabaseStorageCache.length;
+            lblTelemetryCounter.innerText = `INDEX_COUNTER: ${collectionCountLength} FILMS`;
+            lblGalleryCounter.innerText = `${collectionCountLength} of ${collectionCountLength} negative plates processed`;
+
+            // Evaluate if recovery sequences emptied entire element collections to restore default instructions panels
+            if (collectionCountLength === 0) {
+                archivalGalleryContainer.innerHTML = "";
+                archivalGalleryContainer.appendChild(galleryPlaceholderElement);
+            }
+        }
+
+        /**
+         * LOCALSTORAGE PERSISTENT MEMORY DATABASES SYNCHRONIZERS
+         */
+        function commitDatabaseEntriesToLocalStorageMemory() {
+            try {
+                const serializedCachePayloadString = JSON.stringify(internalDatabaseStorageCache);
+                localStorage.setItem('HACIENDA_BOOTH_STORAGE_CACHED_STRIP', serializedCachePayloadString);
+                localStorage.setItem('HACIENDA_BOOTH_INDEX_COUNTER_METRIC', totalCapturedPlatesCount);
+            } catch (storageWriteErrorFault) {
+                console.error("Local database sync write failed to execute due to capacity restrictions profiles: ", storageWriteErrorFault);
+                alert("Paunawa: Puno na ang storage memory cache ng iyong browser para sa mga HD images. Maaari mong i-flush ang memory gamit ang button sa gilid.");
+            }
+        }
+
+        function restoreDatabaseCachedFiles() {
+            try {
+                const localizedCacheEntryData = localStorage.getItem('HACIENDA_BOOTH_STORAGE_CACHED_STRIP');
+                const localizedCounterMetricData = localStorage.getItem('HACIENDA_BOOTH_INDEX_COUNTER_METRIC');
+
+                if (localizedCounterMetricData) {
+                    totalCapturedPlatesCount = parseInt(localizedCounterMetricData, 10);
+                }
+
+                if (localizedCacheEntryData) {
+                    internalDatabaseStorageCache = JSON.parse(localizedCacheEntryData);
+                    
+                    // Loop execution iteration to historical arrays records array mapping arrays
+                    for (let arrayPointerIndex = internalDatabaseStorageCache.length - 1; arrayPointerIndex >= 0; arrayPointerIndex--) {
+                        injectImageNodeToApplicationGalleryStrip(internalDatabaseStorageCache[arrayPointerIndex], false);
+                    }
+                }
+                updateUIAnalyticsCountersDisplay();
+            } catch (databaseReadFaultException) {
+                console.error("Failed to parse localized persistent storage databases records: ", databaseReadFaultException);
+            }
+        }
+
+        function flushApplicationCache() {
+            const clearConfirmationPromptResponse = confirm("Sigurado ka bang nais mong burahin ang lahat ng nakasulat na retrato sa iyong digital archival matrix gallery?");
+            if (clearConfirmationPromptResponse) {
+                localStorage.removeItem('HACIENDA_BOOTH_STORAGE_CACHED_STRIP');
+                localStorage.removeItem('HACIENDA_BOOTH_INDEX_COUNTER_METRIC');
+                
+                internalDatabaseStorageCache = [];
+                totalCapturedPlatesCount = 0;
+
+                // Strip entire dynamically generated element cards subnodes components trees
+                archivalGalleryContainer.innerHTML = "";
+                updateUIAnalyticsCountersDisplay();
+                
+                // Fire notification system alert beep pulse
+                playNativeSynthesizedAudioBeep(220, 0.15, 'triangle');
+            }
+        }
+    </script>
+</body>
+</html>
