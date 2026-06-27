@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Cam Studio - VHS & Game Boy</title>
+    <style>
+        :root {
+            /* VHS Theme defaults */
+            --bg-main: #1a1a24;
+            --bg-panel: #0d0d13;
+            --accent: #00ffcc;
+            --text-main: #f1f1f3;
+            --font-display: 'Courier New', Courier, monospace;
+        }
+
+        .theme-gb {
+            --bg-main: #8b956d;
+            --bg-panel: #c4cfa1;
+            --accent: #4f543b;
+            --text-main: #1f240a;
+            --font-display: monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--bg-panel);
+            border: 4px solid var(--text-main);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .mode-indicator {
+            font-family: var(--font-display);
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+
+        /* Mode Selector */
+        .theme-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .theme-btn {
+            flex: 1;
+            background: transparent;
+            border: 2px solid var(--text-main);
+            color: var(--text-main);
+            padding: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .theme-btn.active {
+            background: var(--text-main);
+            color: var(--bg-panel);
+        }
+
+        /* Viewport Layout matching the 41:18 aspect ratio structure nicely */
+        .viewport-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 720 / 1200;
+            background: #000;
+            border: 3px solid var(--text-main);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        video {
+            display: none; /* Handled via processing canvas completely */
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            image-rendering: pixelated; /* Essential for Game Boy pixel accuracy */
+        }
+
+        /* HUD Styles handled in overlay */
+        .vhs-hud {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+            text-shadow: 2px 2px 0px #000;
+            font-size: 0.9rem;
+            font-weight: bold;
+            box-sizing: border-box;
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .rec-indicator {
+            color: #ff3b30;
+            animation: blink 1s infinite;
+            display: none;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Mechanics Controller Deck */
+        .control-deck {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .deck-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .shutter-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: transparent;
+            border: 5px solid var(--text-main);
+            cursor: pointer;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .shutter-btn::after {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border-radius: 50%;
+            background: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .shutter-btn.recording::after {
+            background: #ff3b30;
+            border-radius: 4px;
+            transform: scale(0.7);
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 2px solid var(--text-main);
+            color: var(--text-main);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="appContainer">
+        <header>
+            <div class="mode-indicator" id="modeDisplay">VHS CAMCORDER</div>
+            <div class="mode-indicator" id="fpsDisplay">12 FPS</div>
+        </header>
+
+        <div class="theme-selector">
+            <button class="theme-btn active" id="vhsToggle">VHS Mode</button>
+            <button class="theme-btn" id="gbToggle">Game Boy</button>
+        </div>
+
+        <div class="viewport-wrapper">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="viewCanvas"></canvas>
+            
+            <!-- Dynamic VHS HUD Text Layer Overlay -->
+            <div class="vhs-hud" id="vhsHudLayer">
+                <div class="hud-row">
+                    <div>PLAY ▶</div>
+                    <div class="rec-indicator" id="hudRec">● REC</div>
+                </div>
+                <div class="hud-row">
+                    <div id="hudDate">OCT 26 1995</div>
+                    <div id="hudTime">12:00:00 AM</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-deck">
+            <div class="deck-row">
+                <button class="action-btn" id="camSwap">🔄 Swap Lens</button>
+                <button class="shutter-btn" id="shutterTrigger"></button>
+                <button class="action-btn" id="typeToggle">🎞️ Capture</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('viewCanvas');
+        const ctx = canvas.getContext('2d');
+        const appContainer = document.getElementById('appContainer');
+        
+        const vhsToggle = document.getElementById('vhsToggle');
+        const gbToggle = document.getElementById('gbToggle');
+        const modeDisplay = document.getElementById('modeDisplay');
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const vhsHudLayer = document.getElementById('vhsHudLayer');
+        const hudRec = document.getElementById('hudRec');
+        const hudDate = document.getElementById('hudDate');
+        const hudTime = document.getElementById('hudTime');
+        
+        const shutterTrigger = document.getElementById('shutterTrigger');
+        const camSwap = document.getElementById('camSwap');
+        const typeToggle = document.getElementById('typeToggle');
+
+        let currentStream = null;
+        let isFrontCamera = false;
+        let currentTheme = 'vhs'; // 'vhs' or 'gb'
+        let captureMode = 'video'; // 'video' or 'photo'
+        let isRecording = false;
+
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let startTime = 0;
+        let frameRate = 15; // Vintage choppy playback rate target
+
+        // Hardware matching standard resolution limit constraints
+        async function startCamera() {
+            if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+            
+            const constraints = {
+                video: {
+                    facingMode: isFrontCamera ? 'user' : 'environment',
+                    width: { ideal: 640 }, // Vintage architectures utilize low-res frame bases
+                    height: { ideal: 480 }
+                },
+                audio: true
+            };
+
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+            } catch(e) {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                video.srcObject = currentStream;
+            }
+        }
+
+        // Game Boy monochrome color palette mapping matrix (4 shades of retro olive greens)
+        const gbPalette = [
+            [15, 56, 15],     // Darkest green
+            [48, 98, 48],     // Dark green
+            [139, 172, 15],   // Light green
+            [155, 188, 15]    // Lightest green-yellow
+        ];
+
+        function applyGameBoyFilter(pixels) {
+            const d = pixels.data;
+            for (let i = 0; i < d.length; i += 4) {
+                // Standard grayscale conversion weighting formula
+                let gray = 0.2126 * d[i] + 0.7152 * d[i+1] + 0.0722 * d[i+2];
+                
+                // Map the grayscale shade directly to one of the 4 Game Boy colors
+                let chosenColor = gbPalette[3];
+                if (gray < 64) chosenColor = gbPalette[0];
+                else if (gray < 128) chosenColor = gbPalette[1];
+                else if (gray < 192) chosenColor = gbPalette[2];
+                
+                d[i] = chosenColor[0];     // R
+                d[i+1] = chosenColor[1];   // G
+                d[i+2] = chosenColor[2];   // B
+            }
+            return pixels;
+        }
+
+        function applyVHSFilter(pixels) {
+            const d = pixels.data;
+            const w = pixels.width;
+            
+            // Simulating interlacing lines and color shifts analog tapes produce
+            for (let i = 0; i < d.length; i += 4) {
+                let yLine = Math.floor((i / 4) / w);
+                
+                // Horizontal scanline dark/light modulation noise simulation
+                if (yLine % 4 === 0) {
+                    d[i] = Math.min(255, d[i] * 1.1);     // Boost reds slightly
+                    d[i+2] = Math.min(255, d[i+2] * 0.9); // Drop blues for warmth
+                }
+                
+                // Intermittent pixel horizontal static noise strip bleeding simulation
+                if (Math.random() < 0.0005) {
+                    d[i] = 255; d[i+1] = 255; d[i+2] = 255; // White noise line pop-in
+                }
+            }
+            return pixels;
+        }
+
+        // Central Canvas render pipeline mapping process loops
+        function renderPipeline() {
+            if (video.paused || video.ended) {
+                setTimeout(renderPipeline, 1000 / frameRate);
+                return;
+            }
+
+            // Game Boy uses extremely tiny resolution architecture (160x144 pixels)
+            if (currentTheme === 'gb') {
+                canvas.width = 160;
+                canvas.height = 144;
+            } else {
+                canvas.width = 320; // VHS uses low-res composite tracking emulator scale
+                canvas.height = 240;
+            }
+
+            // Draw current video frame to layout context
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Fetch current canvas frame matrix arrays
+            let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Process pixel filters based on requested theme configurations
+            if (currentTheme === 'gb') {
+                imgData = applyGameBoyFilter(imgData);
+            } else {
+                imgData = applyVHSFilter(imgData);
+            }
+            
+            // Re-render baked data back to target canvas area viewport
+            ctx.putImageData(imgData, 0, 0);
+
+            // Dynamic dynamic HUD clock counter system updates
+            updateClock();
+
+            // Loop processing according to target vintage low frame refresh architecture
+            setTimeout(renderPipeline, 1000 / frameRate);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            // Offset year by -31 years to fake being locked back in 1995 beautifully
+            const fakeYear = now.getFullYear() - 31;
+            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            
+            hudDate.innerText = `${months[now.getMonth()]} ${String(now.getDate()).padStart(2, '0')} ${fakeYear}`;
+            hudTime.innerText = now.toLocaleTimeString();
+        }
+
+        // Direct Trigger Action Operations Block
+        function handleCapture() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                osc.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            } catch(e) {}
+
+            if (captureMode === 'photo') {
+                // Trigger image downloader stream link deployment immediately
+                const a = document.createElement('a');
+                a.download = `RETRO_${Date.now()}.png`;
+                a.href = canvas.toDataURL();
+                a.click();
+            } else {
+                toggleVideoRecording();
+            }
+        }
+
+        function toggleVideoRecording() {
+            if (!isRecording) {
+                recordedChunks = [];
+                hudRec.style.display = 'block';
+                shutterTrigger.classList.add('recording');
+                isRecording = true;
+
+                const canvasStream = canvas.captureStream(frameRate);
+                if (currentStream.getAudioTracks().length > 0) {
+                    canvasStream.addTrack(currentStream.getAudioTracks()[0]);
+                }
+
+                mediaRecorder = new MediaRecorder(canvasStream);
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const a = document.createElement('a');
+                    a.download = `RETRO_CLIP_${Date.now()}.webm`;
+                    a.href = URL.createObjectURL(blob);
+                    a.click();
+                };
+                mediaRecorder.start();
+            } else {
+                mediaRecorder.stop();
+                hudRec.style.display = 'none';
+                shutterTrigger.classList.remove('recording');
+                isRecording = false;
+            }
+        }
+
+        // Interaction configuration event attachments
+        vhsToggle.addEventListener('click', () => {
+            if (isRecording) return;
+            currentTheme = 'vhs';
+            frameRate = 15; // Smooth low-fi tracking speeds
+            vhsToggle.classList.add('active');
+            gbToggle.classList.remove('active');
+            appContainer.className = 'app-container';
+            vhsHudLayer.style.display = 'flex';
+            modeDisplay.innerText = 'VHS CAMCORDER';
+            fpsDisplay.innerText = '15 FPS';
+        });
+
+        gbToggle.addEventListener('click', () => {
+            if (isRecording) return;
+            currentTheme = 'gb';
+            frameRate = 8; // Choppy authentic dot matrix screen updates
+            gbToggle.classList.add('active');
+            vhsToggle.classList.remove('active');
+            appContainer.className = 'app-container theme-gb';
+            vhsHudLayer.style.display = 'none'; // Game Boy has no standard VHS overlays
+            modeDisplay.innerText = 'GAME BOY CAM';
+            fpsDisplay.innerText = '8 FPS';
+        });
+
+        typeToggle.addEventListener('click', () => {
+            if (isRecording) return;
+            captureMode = captureMode === 'video' ? 'photo' : 'video';
+            typeToggle.innerText = captureMode === 'video' ? '🎞️ Video' : '📸 Photo';
+        });
+
+        camSwap.addEventListener('click', () => {
+            if (isRecording) return;
+            isFrontCamera = !isFrontCamera;
+            startCamera();
+        });
+
+        shutterTrigger.addEventListener('click', handleCapture);
+        video.addEventListener('play', () => setTimeout(renderPipeline, 100));
+
+        // Deployment Launch initialization
+        startCamera();
+    </script>
+</body>
+</html>
